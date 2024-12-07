@@ -4,6 +4,7 @@ import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sih_hackathon/config/dio_config.dart';
 import 'package:sih_hackathon/config/geolocator_config.dart';
+import 'package:sih_hackathon/screens/plot_screen.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -38,11 +39,12 @@ class _AppState extends State<App> {
 
   void listenToPositionUpdates() {
     _positionSubscription = _geolocatorService.positionStream.listen(
-          (Position position) async {
+      (Position position) async {
         try {
           // Update the OSM map with the current position and heading
           await _controller.moveTo(
-            GeoPoint(latitude: position.latitude, longitude: position.longitude),
+            GeoPoint(
+                latitude: position.latitude, longitude: position.longitude),
             animate: true,
           );
 
@@ -65,7 +67,6 @@ class _AppState extends State<App> {
       },
     );
   }
-
 
   Future<void> _getLocationDataAndSend() async {
     try {
@@ -99,12 +100,25 @@ class _AppState extends State<App> {
   Future<void> _sendLocationDataToBackend(double latitude, double longitude,
       double elevation, double speed, double orientation) async {
     try {
-      await dioService.uploadPoint(
+      final response = await dioService.uploadPoint(
         latitude: latitude,
         longitude: longitude,
         speed: speed,
         orientation: orientation,
         elevation: elevation,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(
+              10, 30, 10, MediaQuery.of(context).size.height - 100),
+          content: Text("The server status code is ${response.statusCode}"),
+        ),
+        snackBarAnimationStyle: AnimationStyle(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        ),
       );
     } catch (e) {
       print("Error sending data to backend: $e");
@@ -144,6 +158,25 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const PlotScreen(),
+                  ),
+                );
+              },
+              child: const Icon(Icons.arrow_circle_right_outlined, size: 30,),
+            ),
+          )
+        ],
+      ),
       body: Stack(
         children: [
           OSMFlutter(
@@ -223,15 +256,18 @@ class _AppState extends State<App> {
 
                       // Handle the data state
                       if (snapshot.hasData) {
-                        Position data = snapshot.data!; // Since hasData is true, data is non-null
+                        Position data = snapshot
+                            .data!; // Since hasData is true, data is non-null
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text("Latitude: ${data.latitude}"),
                             Text("Longitude: ${data.longitude}"),
                             Text("Speed: ${data.speed.toStringAsFixed(2)} m/s"),
-                            Text("Orientation: ${data.heading.toStringAsFixed(2)}°"),
-                            Text("Elevation: ${data.altitude.toStringAsFixed(2)} m"),
+                            Text(
+                                "Orientation: ${data.heading.toStringAsFixed(2)}°"),
+                            Text(
+                                "Elevation: ${data.altitude.toStringAsFixed(2)} m"),
                           ],
                         );
                       }
