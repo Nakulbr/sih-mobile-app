@@ -1,6 +1,5 @@
 import "package:flutter/material.dart";
 import "package:sih_hackathon/app.dart";
-import "package:sih_hackathon/screens/register.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +13,13 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: RegisterPage(),
+      theme: ThemeData(
+        fontFamily: 'Poppins',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.white,
+        ),
+      ),
+      home: const App(),
     );
   }
 }
-
