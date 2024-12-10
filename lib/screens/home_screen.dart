@@ -1,288 +1,242 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sih_hackathon/config/dio_config.dart';
 import 'package:sih_hackathon/config/geolocator_config.dart';
+import 'package:sih_hackathon/constants/colors.dart';
 import 'package:sih_hackathon/screens/plot_screen.dart';
+import 'package:sih_hackathon/widgets/custom_elevated_button.dart';
+import 'package:sih_hackathon/widgets/home_screen_model_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  late MapController _controller;
-  late GeolocatorService _geolocatorService;
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  late final MapController _controller;
+  late final GeolocatorService _geolocatorService;
+  final ValueNotifier<bool> _isSendingData = ValueNotifier(false);
   StreamSubscription<Position>? _positionSubscription;
   Timer? _timer;
-  bool _isSendingData = false;
+
+  late AnimationController _animationController;
+  late Animation<double> _rotationAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _offsetAnimation;
 
   @override
   void initState() {
     super.initState();
-    initializeOSM();
-
     _geolocatorService = GeolocatorService();
-
-    listenToPositionUpdates();
-  }
-
-  Future<void> initializeOSM() async {
     _controller = MapController.withPosition(
       initPosition: GeoPoint(latitude: 0, longitude: 0),
     );
-    // await _controller.startLocationUpdating();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _rotationAnimation =
+        Tween<double>(begin: 0, end: 3.14 / 20).animate(_animationController);
+    _scaleAnimation =
+        Tween<double>(begin: 1, end: 2.7).animate(_animationController);
+    _offsetAnimation =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, 5))
+            .animate(_animationController);
+
+    _initializePositionStream();
   }
 
-  void listenToPositionUpdates() {
+  void _initializePositionStream() {
     _positionSubscription = _geolocatorService.positionStream.listen(
       (Position position) async {
-        try {
-          // Update the OSM map with the current position and heading
-          await _controller.moveTo(
-            GeoPoint(
-                latitude: position.latitude, longitude: position.longitude),
-            animate: true,
-          );
-
-          // Update the direction of the marker if the heading is valid
-          // if (position.heading >= 0) {
-          //   await _controller.setMarkerOrientation(
-          //     GeoPoint(
-          //       latitude: position.latitude,
-          //       longitude: position.longitude,
-          //     ),
-          //     position.heading,
-          //   );
-          // }
-        } catch (e) {
-          print("Error updating map or marker orientation: $e");
-        }
+        await _updateMapLocation(position);
       },
-      onError: (error) {
-        print("Error fetching location: $error");
-      },
+      onError: (error) => debugPrint("Error fetching location: $error"),
     );
   }
 
-  Future<void> _getLocationDataAndSend() async {
+  Future<void> _updateMapLocation(Position position) async {
     try {
-      // GeoPoint? currentLocation = await _controller.myLocation();
-      // if (currentLocation == null) {
-      //   print("Failed to get location from OSM");
-      //   return;
-      // }
-
-      Position position = await Geolocator.getCurrentPosition();
-
-      double latitude = position.latitude;
-      double longitude = position.longitude;
-      double elevation = position.altitude;
-      double speed = position.speed;
-      double orientation = position.heading;
-
-      print("Latitude : $latitude");
-      print("Longitude : $longitude");
-      print("Elevation : $elevation");
-      print("Speed : $speed");
-      print("Orientation : $orientation");
-
-      await _sendLocationDataToBackend(
-          latitude, longitude, elevation, speed, orientation);
-    } catch (e) {
-      print("Error fetching location data: $e");
-    }
-  }
-
-  Future<void> _sendLocationDataToBackend(double latitude, double longitude,
-      double elevation, double speed, double orientation) async {
-    try {
-      final response = await dioService.uploadPoint(
-        latitude: latitude,
-        longitude: longitude,
-        speed: speed,
-        orientation: orientation,
-        elevation: elevation,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.fromLTRB(
-              10, 30, 10, MediaQuery.of(context).size.height - 100),
-          content: Text("The server status code is ${response.statusCode}"),
-        ),
-        snackBarAnimationStyle: AnimationStyle(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        ),
+      await _controller.moveTo(
+        GeoPoint(latitude: position.latitude, longitude: position.longitude),
+        animate: true,
       );
     } catch (e) {
-      print("Error sending data to backend: $e");
+      debugPrint("Error updating map: $e");
     }
   }
 
-  void _startSendingData() {
-    if (!_isSendingData) {
-      setState(() {
-        _isSendingData = true;
-      });
-
-      _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-        _getLocationDataAndSend();
+  void _startDataTransmission() {
+    if (!_isSendingData.value) {
+      _isSendingData.value = true;
+      _animationController.forward(); // Start the animation
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
+        try {
+          final Position position = await Geolocator.getCurrentPosition();
+          await _sendLocationData(position);
+        } catch (e) {
+          debugPrint("Error during periodic data sending: $e");
+        }
       });
     }
   }
 
-  void _stopSendingData() {
-    if (_isSendingData) {
-      _timer?.cancel();
-      setState(() {
-        _isSendingData = false;
-      });
+  void _stopDataTransmission() {
+    _timer?.cancel();
+    _isSendingData.value = false;
+    _animationController.reverse(); // Reverse the animation to original state
+  }
+
+  Future<void> _sendLocationData(Position position) async {
+    final double speedKmH = position.speed * 3.6;
+    try {
+      await dioService.uploadPoint(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        speed: speedKmH,
+        orientation: position.heading,
+        elevation: position.altitude,
+      );
+    } catch (e) {
+      debugPrint("Error sending data to backend: $e");
     }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _animationController.dispose();
     _timer?.cancel();
     _positionSubscription?.cancel();
-    _geolocatorService.dispose();
+    _isSendingData.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const PlotScreen(),
-                  ),
-                );
-              },
-              child: const Icon(
-                Icons.arrow_circle_right_outlined,
-                size: 30,
-              ),
-            ),
-          )
-        ],
-      ),
       body: Stack(
         children: [
-          OSMFlutter(
-            controller: _controller,
-            mapIsLoading: const Center(
-              child: CircularProgressIndicator(),
-            ),
-            osmOption: OSMOption(
-              userTrackingOption: const UserTrackingOption(
-                enableTracking: true,
-                unFollowUser: false,
-              ),
-              zoomOption: const ZoomOption(
-                initZoom: 12,
-                minZoomLevel: 3,
-                maxZoomLevel: 19,
-                stepZoom: 1.0,
-              ),
-              userLocationMarker: UserLocationMaker(
-                personMarker: const MarkerIcon(
-                  icon: Icon(
-                    Icons.location_on,
-                    color: Colors.blue,
-                    size: 100,
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return Transform(
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, -0.01)
+                  ..rotateX(_rotationAnimation.value)
+                  ..scale(_scaleAnimation.value)
+                  ..translate(_offsetAnimation.value.dx),
+                alignment: FractionalOffset.center,
+                child: OSMFlutter(
+                  controller: _controller,
+                  mapIsLoading: const Center(
+                    child: SpinKitFadingCube(
+                      color: primaryColor,
+                    ),
+                  ),
+                  osmOption: OSMOption(
+                    userTrackingOption: const UserTrackingOption(
+                      enableTracking: true,
+                      unFollowUser: false,
+                    ),
+                    zoomOption: const ZoomOption(
+                      initZoom: 12,
+                      minZoomLevel: 3,
+                      maxZoomLevel: 19,
+                      stepZoom: 1.0,
+                    ),
+                    userLocationMarker: UserLocationMaker(
+                      personMarker: const MarkerIcon(
+                        icon: Icon(Icons.location_on,
+                            color: Colors.blue, size: 100),
+                      ),
+                      directionArrowMarker: MarkerIcon(
+                        iconWidget: Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: const Icon(
+                            Icons.double_arrow_rounded,
+                            color: Colors.white,
+                            size: 100,
+                          ),
+                        ),
+                      ),
+                    ),
+                    roadConfiguration:
+                        const RoadOption(roadColor: Colors.yellowAccent),
                   ),
                 ),
-                directionArrowMarker: MarkerIcon(
-                  iconWidget: Container(
-                    height: 100,
-                    width: 100,
+              );
+            },
+          ),
+          // Speedometer
+          Positioned(
+            top: 50,
+            left: 16,
+            child: StreamBuilder<Position>(
+              stream: _geolocatorService.positionStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final double speedKmH = snapshot.data!.speed * 3.6;
+                  return Container(
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(50),
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
-                      Icons.double_arrow_rounded,
-                      color: Colors.white,
-                      size: 100,
+                    child: Text(
+                      "${speedKmH.toStringAsFixed(2)} km/h",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-              roadConfiguration: const RoadOption(
-                roadColor: Colors.yellowAccent,
-              ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
             ),
           ),
+          // Start and Stop Buttons
           Align(
             alignment: AlignmentDirectional.bottomCenter,
             child: SizedBox(
               height: 150,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _isSendingData ? null : _startSendingData,
-                    child: const Text("Start"),
-                  ),
-                  ElevatedButton(
-                    onPressed: _isSendingData ? _stopSendingData : null,
-                    child: const Text("Stop"),
-                  ),
-                  StreamBuilder<Position>(
-                    stream: _geolocatorService.positionStream,
-                    builder: (context, snapshot) {
-                      // Handle loading and error states
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator(); // Display a loading spinner while waiting for data
-                      }
-
-                      if (snapshot.hasError) {
-                        return Text(
-                          "Error: ${snapshot.error}",
-                          style: const TextStyle(color: Colors.red),
-                        ); // Display an error message if there's an issue with the stream
-                      }
-
-                      // Handle the data state
-                      if (snapshot.hasData) {
-                        Position data = snapshot
-                            .data!; // Since hasData is true, data is non-null
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Latitude: ${data.latitude}"),
-                            Text("Longitude: ${data.longitude}"),
-                            Text("Speed: ${data.speed.toStringAsFixed(2)} m/s"),
-                            Text(
-                                "Orientation: ${data.heading.toStringAsFixed(2)}°"),
-                            Text(
-                                "Elevation: ${data.altitude.toStringAsFixed(2)} m"),
-                          ],
-                        );
-                      }
-
-                      // Handle the case where there's no data yet (shouldn't hHomeScreenen if stream emits data)
-                      return const Text("No data available");
-                    },
-                  )
-                ],
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _isSendingData,
+                builder: (context, isSendingData, _) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      CustomElevatedButton(
+                        onPressed:
+                            isSendingData ? null : _startDataTransmission,
+                        content: "Start",
+                        width: 150,
+                      ),
+                      CustomElevatedButton(
+                        onPressed: isSendingData ? _stopDataTransmission : null,
+                        content: "Stop",
+                        width: 150,
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
+          const HomeScreenModelSheet(),
         ],
       ),
     );

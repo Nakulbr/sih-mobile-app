@@ -4,6 +4,8 @@ import 'package:sih_hackathon/constants/custom_font_weight.dart';
 import 'package:sih_hackathon/constants/images.dart';
 import 'package:sih_hackathon/screens/auth/register_screen.dart';
 import 'package:sih_hackathon/screens/home_screen.dart';
+import 'package:sih_hackathon/screens/profile_screen.dart';
+import 'package:sih_hackathon/screens/wallet_screen.dart';
 import 'package:sih_hackathon/utils/show_snackbar.dart';
 import 'package:sih_hackathon/widgets/continue_with_button.dart';
 import 'package:sih_hackathon/widgets/custom_elevated_button.dart';
@@ -27,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _passwordController.dispose();
-    _passwordController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 

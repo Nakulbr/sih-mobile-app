@@ -1,115 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
-import 'package:sih_hackathon/config/dio_config.dart';
+import 'package:sih_hackathon/model/route_model.dart';
 
-class PlotScreen extends StatefulWidget {
-  const PlotScreen({super.key});
+class PlotScreen extends StatelessWidget {
+  final RouteData route;
 
-  @override
-  State<PlotScreen> createState() => _PlotScreenState();
-}
-
-class _PlotScreenState extends State<PlotScreen> {
-  late MapController _controller;
-  bool _isRoadDrawn = false;
-  List<GeoPoint>? geoPoints;
-
-  @override
-  void initState() {
-    _controller = MapController.withPosition(
-      initPosition: GeoPoint(latitude: 11, longitude: 76),
-    );
-    super.initState();
-    fetchGeoPoints();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> fetchGeoPoints() async {
-    try {
-      final points = await dioService.getPlotPoints();
-      setState(() {
-        geoPoints = points;
-      });
-    } catch (e) {
-      debugPrint("Error fetching GeoPoints: $e");
-    }
-  }
-
-  Future<void> drawRoad() async {
-    try {
-      if (geoPoints == null || geoPoints!.length < 2) {
-        debugPrint("Insufficient points to draw a road");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Not enough points to draw a road")),
-        );
-        return;
-      }
-
-      await _controller.moveTo(geoPoints!.first);
-
-      await _controller.drawRoadManually(
-        geoPoints!,
-        const RoadOption(
-          roadColor: Colors.blue,
-          zoomInto: true,
-        ),
-      );
-
-      setState(() {
-        _isRoadDrawn = true;
-      });
-    } catch (e) {
-      debugPrint("Error drawing road: ${e.toString()}");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to draw road")),
-      );
-    }
-  }
+  PlotScreen({required this.route});
 
   @override
   Widget build(BuildContext context) {
+    // Create a MapController with the initial position
+    final MapController mapController = MapController.withPosition(
+      initPosition: route.start, // Initialize map with the starting point
+    );
+
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          OSMFlutter(
+            controller: mapController,
+            osmOption: OSMOption(),
+            onMapIsReady: (isReady) async {
+              if (isReady) {
+                await plotRoute(
+                    mapController); // Call plotRoute after map is ready
+              }
+            },
+          ),
+          buildRouteDetails(context),
+          buildLegend(),
+        ],
       ),
-      body: geoPoints == null
-          ? const Center(child: CircularProgressIndicator())
-          : Stack(
-              children: [
-                OSMFlutter(
-                  controller: _controller,
-                  osmOption: OSMOption(
-                    zoomOption: const ZoomOption(
-                      initZoom: 8,
-                      minZoomLevel: 3,
-                      maxZoomLevel: 19,
-                      stepZoom: 1.0,
-                    ),
-                    userLocationMarker: UserLocationMaker(
-                      personMarker: const MarkerIcon(
-                        icon: Icon(Icons.location_on),
-                      ),
-                      directionArrowMarker: const MarkerIcon(
-                        icon: Icon(Icons.arrow_circle_right),
-                      ),
-                    ),
-                  ),
+    );
+  }
+
+  // Plot the route on the map
+  Future<void> plotRoute(MapController mapController) async {
+    // Draw the road
+    await mapController.drawRoad(
+      route.start,
+      route.end,
+      roadOption: RoadOption(
+        roadColor: Colors.blue,
+        roadWidth: 5,
+      ),
+      intersectPoint:
+          route.waypoints.map((wp) => wp['location'] as GeoPoint).toList(),
+    );
+
+    // Add toll point markers
+    for (final tollPoint in route.tollPoints) {
+      await mapController.addMarker(
+        tollPoint['location'] as GeoPoint,
+        markerIcon: MarkerIcon(
+          icon: Icon(
+            Icons.local_parking,
+            color: Colors.red,
+            size: 48,
+          ),
+        ),
+      );
+    }
+  }
+
+  // Route Details UI
+  Widget buildRouteDetails(BuildContext context) {
+    return Positioned(
+      bottom: 20,
+      left: 20,
+      right: 20,
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Start: ${route.startName}", style: TextStyle(fontSize: 16)),
+              Text("End: ${route.endName}", style: TextStyle(fontSize: 16)),
+              if (route.tollPoints.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 8),
+                    Text("Toll Points:", style: TextStyle(fontSize: 16)),
+                    ...route.tollPoints
+                        .map((toll) => Text("- ${toll['name']}"))
+                        .toList(),
+                  ],
                 ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: TextButton(
-                    onPressed: drawRoad,
-                    child: const Text("Draw Road"),
-                  ),
-                ),
-              ],
-            ),
+              SizedBox(height: 10),
+              Text(
+                "Total Expenses: ${route.expenses}",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text("Back to History"),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Legend for the map
+  Widget buildLegend() {
+    return Positioned(
+      top: 20,
+      right: 20,
+      child: Card(
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(width: 20, height: 20, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text("Route"),
+                ],
+              ),
+              SizedBox(height: 5),
+              Row(
+                children: [
+                  Icon(Icons.local_parking, color: Colors.red, size: 20),
+                  SizedBox(width: 8),
+                  Text("Toll Point"),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

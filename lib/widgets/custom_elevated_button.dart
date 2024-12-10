@@ -12,7 +12,7 @@ class CustomElevatedButton extends StatelessWidget {
     required this.width,
   });
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String content;
   final double width;
   final bool isRounded;
