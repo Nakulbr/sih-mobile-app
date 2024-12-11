@@ -106,33 +106,33 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         content: "Sign In",
                       ),
-                      const SizedBox(height: 20),
-                      const Center(
-                        child: CustomText(
-                          content: "Or sign in with",
-                          fontWeight: CustomFontWeight.normal,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            ContinueWithButton(
-                              onPressed: () {},
-                              platform: "Google",
-                              platformIcon: googleLogo,
-                            ),
-                            const SizedBox(height: 16),
-                            ContinueWithButton(
-                              onPressed: () {},
-                              platform: "Apple",
-                              platformIcon: appleLogo,
-                            ),
-                          ],
-                        ),
-                      )
+                      // const SizedBox(height: 20),
+                      // const Center(
+                      //   child: CustomText(
+                      //     content: "Or sign in with",
+                      //     fontWeight: CustomFontWeight.normal,
+                      //     fontSize: 14,
+                      //   ),
+                      // ),
+                      // const SizedBox(height: 20),
+                      // Center(
+                      //   child: Column(
+                      //     crossAxisAlignment: CrossAxisAlignment.center,
+                      //     children: [
+                      //       ContinueWithButton(
+                      //         onPressed: () {},
+                      //         platform: "Google",
+                      //         platformIcon: googleLogo,
+                      //       ),
+                      //       const SizedBox(height: 16),
+                      //       ContinueWithButton(
+                      //         onPressed: () {},
+                      //         platform: "Apple",
+                      //         platformIcon: appleLogo,
+                      //       ),
+                      //     ],
+                      //   ),
+                      // )
                     ],
                   ),
                 ),

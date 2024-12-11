@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:sih_hackathon/constants/colors.dart';
 import 'package:sih_hackathon/constants/custom_font_weight.dart';
 import 'package:sih_hackathon/constants/images.dart';
+import 'package:sih_hackathon/widgets/GooglePayWidget.dart';
 import 'package:sih_hackathon/widgets/custom_text.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
+  
+  // create a function to add payment
+  void addPayment() {
+    // add payment logic here
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +22,7 @@ class WalletScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            GooglePayWidget(),
             ListTile(
               title: const CustomText(
                 content: "Wallet balance",
@@ -26,18 +33,14 @@ class WalletScreen extends StatelessWidget {
               subtitle: const CustomText(
                 content: "₹2,458.50",
                 fontWeight: CustomFontWeight.bold,
-                fontSize: 40,
+                fontSize: 30,
                 fontColor: Colors.white,
               ),
-              trailing: CircleAvatar(
-                radius: 25,
-                backgroundColor: Colors.white.withOpacity(0.3),
-                child: const Icon(
-                  Icons.history,
-                  color: Colors.white,
-                ),
-              ),
+              
+              // trailing: ElevatedButton(onPressed: addPayment, child: Text("Add Money")),
+              // trailing: GooglePayWidget(),
             ),
+
             const SizedBox(height: 20),
             Card(
               color: Colors.white,
@@ -75,35 +78,35 @@ class WalletScreen extends StatelessWidget {
                         fontColor: Colors.green,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      tileColor: Colors.black12.withOpacity(0.05),
-                      visualDensity: VisualDensity.compact,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      trailing: const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                      ),
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.deepOrange.shade50,
-                        child: const Icon(
-                          Icons.credit_card_outlined,
-                          color: Colors.orange,
-                        ),
-                      ),
-                      title: const CustomText(
-                        content: "**** **** **** 4589",
-                        fontWeight: CustomFontWeight.semibold,
-                        fontSize: 16,
-                      ),
-                      subtitle: const CustomText(
-                        content: "Expires 12/25",
-                        fontWeight: CustomFontWeight.normal,
-                        fontSize: 12,
-                      ),
-                    ),
+                    // const SizedBox(height: 16),
+                    // ListTile(
+                    //   tileColor: Colors.black12.withOpacity(0.05),
+                    //   visualDensity: VisualDensity.compact,
+                    //   shape: RoundedRectangleBorder(
+                    //     borderRadius: BorderRadius.circular(10),
+                    //   ),
+                    //   trailing: const Icon(
+                    //     Icons.check_circle,
+                    //     color: Colors.green,
+                    //   ),
+                    //   leading: CircleAvatar(
+                    //     backgroundColor: Colors.deepOrange.shade50,
+                    //     child: const Icon(
+                    //       Icons.credit_card_outlined,
+                    //       color: Colors.orange,
+                    //     ),
+                    //   ),
+                    //   title: const CustomText(
+                    //     content: "**** **** **** 4589",
+                    //     fontWeight: CustomFontWeight.semibold,
+                    //     fontSize: 16,
+                    //   ),
+                    //   subtitle: const CustomText(
+                    //     content: "Expires 12/25",
+                    //     fontWeight: CustomFontWeight.normal,
+                    //     fontSize: 12,
+                    //   ),
+                    // ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -137,7 +140,7 @@ class WalletScreen extends StatelessWidget {
             const SizedBox(height: 20),
             Expanded(
               child: Card(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: SingleChildScrollView(
@@ -155,7 +158,7 @@ class WalletScreen extends StatelessWidget {
                             backgroundColor: Colors.white.withOpacity(0.3),
                             child: const Icon(
                               Icons.arrow_upward_rounded,
-                              color: Colors.white,
+                              // color: Colors.white,
                             ),
                           ),
                           title: const CustomText(
@@ -172,7 +175,7 @@ class WalletScreen extends StatelessWidget {
                             content: "-₹250",
                             fontWeight: CustomFontWeight.semibold,
                             fontSize: 16,
-                            fontColor: Colors.white,
+                            // fontColor: Colors.white,
                           ),
                         ),
                         ListTile(
@@ -180,7 +183,7 @@ class WalletScreen extends StatelessWidget {
                             backgroundColor: Colors.white.withOpacity(0.3),
                             child: const Icon(
                               Icons.arrow_downward_rounded,
-                              color: Colors.white,
+                              // color: Colors.white,
                             ),
                           ),
                           title: const CustomText(
@@ -197,7 +200,7 @@ class WalletScreen extends StatelessWidget {
                             content: "+₹1,000",
                             fontWeight: CustomFontWeight.semibold,
                             fontSize: 16,
-                            fontColor: Colors.white,
+                            // fontColor: Colors.white,
                           ),
                         ),
                         ListTile(
@@ -205,7 +208,7 @@ class WalletScreen extends StatelessWidget {
                             backgroundColor: Colors.white.withOpacity(0.3),
                             child: const Icon(
                               Icons.arrow_upward_rounded,
-                              color: Colors.white,
+                              // color: Colors.white,
                             ),
                           ),
                           title: const CustomText(
@@ -222,7 +225,7 @@ class WalletScreen extends StatelessWidget {
                             content: "-₹120",
                             fontWeight: CustomFontWeight.semibold,
                             fontSize: 16,
-                            fontColor: Colors.white,
+                            // fontColor: Colors.white,
                           ),
                         ),
                         ListTile(
@@ -230,7 +233,7 @@ class WalletScreen extends StatelessWidget {
                             backgroundColor: Colors.white.withOpacity(0.3),
                             child: const Icon(
                               Icons.arrow_upward_rounded,
-                              color: Colors.white,
+                              // color: Colors.white,
                             ),
                           ),
                           title: const CustomText(
@@ -247,7 +250,7 @@ class WalletScreen extends StatelessWidget {
                             content: "-₹270",
                             fontWeight: CustomFontWeight.semibold,
                             fontSize: 16,
-                            fontColor: Colors.white,
+                            // fontColor: Colors.white,
                           ),
                         ),
                       ],
