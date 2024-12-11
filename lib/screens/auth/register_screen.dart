@@ -27,6 +27,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> _vehicleTypes = ['Bike', 'Car', 'Truck', 'Bus', 'Other'];
 
+  void _register() {
+    // Register user
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -165,7 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 CustomElevatedButton(
-                  onPressed: () {},
+                  onPressed: _register,
                   content: "Create Account",
                   width: double.infinity,
                   isRounded: true,
